@@ -34,6 +34,10 @@ fi
 #
 # Echo non-sensitive variables that are about to be used.
 #
+echo_var AWS_REGION
+echo_var S3_BUCKET
+echo_var S3_FILENAME
+echo
 echo_var S3_FILENAME_REGEX
 echo_var DIST_PATH
 echo_var RUN_DEPENDENCIES_COMMAND
@@ -41,9 +45,6 @@ echo_var DEPENDENCIES_COMMAND
 echo_var RUN_LINT
 echo_var LINT_COMMAND
 echo_var BUILD_COMMAND
-echo_var AWS_REGION
-echo_var S3_BUCKET
-echo_var S3_FILENAME
 
 #
 # Begin the work.
