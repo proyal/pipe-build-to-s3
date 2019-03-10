@@ -4,69 +4,58 @@
 #
 
 source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/create-version-file.sh"
 
 #
 # Required parameters
 #
-DIST_PATH=${DIST_PATH:?'DIST_PATH variable missing.'}
 AWS_REGION=${AWS_REGION:?'AWS_REGION variable missing.'}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?'AWS_SECRET_ACCESS_KEY variable missing.'}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?'AWS_ACCESS_KEY_ID variable missing.'}
 S3_BUCKET=${S3_BUCKET:?'S3_BUCKET variable missing.'}
-
-#
-# If S3_DIST_FILENAME is defined, use it, otherwise use a combination of BITBUCKET_REPO_SLUG, BITBUCKET_COMMIT, and TARGET_ENV
-#
-if [ -z $S3_DIST_FILENAME ]
-then
-  if [ -z $BITBUCKET_REPO_SLUG ] || [ -z $BITBUCKET_COMMIT ]
-  then
-    fail "If S3_DIST_FILENAME is not defined, BITBUCKET_REPO_SLUG and BITBUCKET_COMMIT must be defined to create a default."
-  fi
-
-  if [ -z $TARGET_ENV ]
-  then
-    S3_DIST_FILENAME=${BITBUCKET_REPO_SLUG}_${BITBUCKET_COMMIT}.zip
-  else
-    S3_DIST_FILENAME=${BITBUCKET_REPO_SLUG}_${BITBUCKET_COMMIT}_${TARGET_ENV}.zip
-  fi
-fi
+S3_FILENAME=${S3_FILENAME:?'S3_FILENAME variable missing.'}
 
 #
 # Default parameters
 #
-DEBUG=${DEBUG:="false"}
+S3_FILENAME_REGEX=${S3_FILENAME_REGEX:='^[a-zA-Z0-9_/-]+\.zip$'}
+DIST_PATH=${DIST_PATH:='.dist'}
+RUN_DEPENDENCIES_COMMAND=${RUN_DEPENDENCIES_COMMAND:=true}
+DEPENDENCIES_COMMAND=${DEPENDENCIES_COMMAND:='npm ci'}
+RUN_LINT=${RUN_LINT:=true}
+LINT_COMMAND=${LINT_COMMAND:='npm run lint'}
 BUILD_COMMAND=${BUILD_COMMAND:='npm run build'}
+
+if [[ ! $S3_FILENAME =~ $S3_FILENAME_REGEX ]];
+then
+  fail "S3_FILENAME might not be set as intended. Value '${S3_FILENAME}' does not match $S3_FILENAME_REGEX"
+fi
 
 #
 # Echo non-sensitive variables that are about to be used.
 #
-evs=(DIST_PATH
-     BUILD_COMMAND
-     AWS_REGION
-     S3_BUCKET
-     S3_DIST_FILENAME
-     BITBUCKET_REPO_SLUG
-     BITBUCKET_COMMIT
-     TARGET_ENV)
-
-for ev in "${evs[@]}"
-do
-  echo $ev=\'${!ev}\'
-done
+echo_var S3_FILENAME_REGEX
+echo_var DIST_PATH
+echo_var RUN_DEPENDENCIES_COMMAND
+echo_var DEPENDENCIES_COMMAND
+echo_var RUN_LINT
+echo_var LINT_COMMAND
+echo_var BUILD_COMMAND
+echo_var AWS_REGION
+echo_var S3_BUCKET
+echo_var S3_FILENAME
 
 #
 # Begin the work.
 #
-run npm ci
-run npm run lint
-run eval ${BUILD_COMMAND}
-run "$(dirname "$0")/create-version-file.sh"
-run cd ${DIST_PATH}; zip -r ../dist.zip * .; cd ..
-run aws s3 cp --region $AWS_REGION dist.zip s3://${S3_BUCKET}/${S3_DIST_FILENAME} --content-type application/zip
-
-if [[ "${status}" == "0" ]]; then
-  success "Success!"
-else
-  fail "Error!"
+run rm -rf $DIST_PATH
+if [[ $RUN_DEPENDENCIES_COMMAND == true ]]; then
+  run ${DEPENDENCIES_COMMAND}
 fi
+if [[ $RUN_LINT == true ]]; then
+  run ${LINT_COMMAND}
+fi
+run ${BUILD_COMMAND}
+run create_version_file
+run "cd ${DIST_PATH}; zip -r ../dist.zip ./*; cd .."
+run aws s3 cp --region $AWS_REGION dist.zip s3://${S3_BUCKET}/${S3_FILENAME} --content-type application/zip

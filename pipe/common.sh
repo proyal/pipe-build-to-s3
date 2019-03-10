@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script is based on Atlassian's pipe example.
+#
 # Common script helper code for writing bash based pipes
 # This file needs to be 'source'd from your bash script, i.e. `source common.sh`
 # This supplies the `info()`, `error()`, `debug()`, `success()` and `fail()` command that will
@@ -10,14 +12,13 @@
 # function from within your Pipe script and using the `debug()` function which will conditionally emit
 # debugging information.
 
-set -e
 set -o pipefail
 
-gray="\\e[37m"
-blue="\\e[36m"
-red="\\e[31m"
-green="\\e[32m"
-reset="\\e[0m"
+gray="\\033[37m"
+blue="\\033[36m"
+red="\\033[31m"
+green="\\033[32m"
+reset="\\033[0m"
 
 # Output information to the Pipelines log for the user
 info() { echo -e "${blue}INFO: $*${reset}"; }
@@ -43,6 +44,18 @@ enable_debug() {
   fi
 }
 
+check_status() {
+  if [[ "${status}" == "0" ]]; then
+    success "Success!"
+  else
+    fail "Error!"
+  fi
+}
+
+echo_var() {
+  echo $1=\'${!1}\'
+}
+
 # Execute a command, saving its output and exit status code, and echoing its output upon completion.
 # Globals set:
 #   status: Exit status of the command that was executed.
@@ -50,6 +63,9 @@ enable_debug() {
 #
 run() {
   echo "$@"
+  set +e
   eval $@
   status=$?
+  set -e
+  check_status
 }
