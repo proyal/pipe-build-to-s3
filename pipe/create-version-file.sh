@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 create_version_file() {
   VERSION_PATH=version

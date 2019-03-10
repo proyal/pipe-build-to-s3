@@ -62,7 +62,7 @@ echo_var() {
 #   output: Output generated from the command.
 #
 run() {
-  echo "$@"
+  echo + "$@"
   set +e
   eval $@
   status=$?
