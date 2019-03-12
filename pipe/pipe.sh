@@ -58,5 +58,5 @@ if [[ "$RUN_LINT_COMMAND" == "true" ]]; then
 fi
 run ${BUILD_COMMAND}
 run create_version_file
-run "cd ${DIST_PATH}; zip -r ../dist.zip ./*; cd .."
+run "cd ${DIST_PATH}; zip -r ../dist.zip .; cd .."
 run aws s3 cp --region $AWS_REGION dist.zip s3://${S3_BUCKET}/${S3_FILENAME} --content-type application/zip
