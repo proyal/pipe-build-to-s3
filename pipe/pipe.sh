@@ -5,6 +5,7 @@
 
 source "$(dirname "$0")/common.sh"
 source "$(dirname "$0")/create-version-file.sh"
+source "$(dirname "$0")/setup-ssh-dir.sh"
 
 #
 # Required parameters
@@ -30,6 +31,8 @@ if [[ ! $S3_FILENAME =~ $S3_FILENAME_REGEX ]];
 then
   fail "S3_FILENAME might not be set as intended. Value '${S3_FILENAME}' does not match $S3_FILENAME_REGEX"
 fi
+
+setup_ssh_dir
 
 #
 # Echo non-sensitive variables that are about to be used.
